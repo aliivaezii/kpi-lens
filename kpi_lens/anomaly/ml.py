@@ -8,13 +8,13 @@ Isolation Forest is chosen over One-Class SVM because it scales to the
 feature set used here (6 lag features) without hyperparameter sensitivity,
 and its contamination parameter maps cleanly to an expected anomaly rate.
 """
+
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler
@@ -75,7 +75,9 @@ class IsolationForestDetector(AnomalyDetector):
         )
         self._model.fit(scaled)
         self._is_fitted = True
-        logger.info("IsolationForest fitted for %s on %d rows", self._kpi_name, len(historical))
+        logger.info(
+            "IsolationForest fitted for %s on %d rows", self._kpi_name, len(historical)
+        )
 
     def detect(self, current: pd.DataFrame) -> list[AnomalyResult]:
         self._require_fitted()
@@ -96,7 +98,7 @@ class IsolationForestDetector(AnomalyDetector):
                 results.append(
                     AnomalyResult(
                         kpi_name=self._kpi_name,
-                        detected_at=datetime.now(tz=timezone.utc),
+                        detected_at=datetime.now(tz=UTC),
                         period_start=row["period_start"],
                         period_end=row["period_end"],
                         observed_value=float(row["value"]),

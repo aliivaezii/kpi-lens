@@ -11,6 +11,7 @@ Design rationale for three detectors rather than one:
 - CUSUM catches sustained directional drift that neither Z-score nor IQR detect
   until the drift has accumulated enough to shift the rolling statistics
 """
+
 from __future__ import annotations
 
 from datetime import datetime

@@ -4,6 +4,7 @@ Anthropic API wrapper with retry logic and token accounting.
 This is the only file that imports the `anthropic` library.
 All LLM calls in the application go through this client.
 """
+
 from __future__ import annotations
 
 import logging
@@ -63,7 +64,7 @@ class LLMClient:
                     response.usage.input_tokens,
                     response.usage.output_tokens,
                 )
-                return response.content[0].text
+                return str(response.content[0].text)
 
             except anthropic.RateLimitError:
                 wait = 2**attempt
@@ -74,12 +75,15 @@ class LLMClient:
                 if exc.status_code >= 500:
                     wait = 2**attempt
                     logger.warning(
-                        "Anthropic 5xx error (%d); retrying in %ds", exc.status_code, wait
+                        "Anthropic 5xx error (%d); retrying in %ds",
+                        exc.status_code,
+                        wait,
                     )
                     time.sleep(wait)
                 else:
                     # 4xx errors (except 429) are not retryable
-                    raise LLMError(f"Anthropic API error {exc.status_code}: {exc.message}") from exc
+                    msg = f"Anthropic API error {exc.status_code}: {exc.message}"
+                    raise LLMError(msg) from exc
 
         raise LLMError(f"LLM call failed after {self._max_retries} retries")
 

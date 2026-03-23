@@ -6,11 +6,14 @@ AnomalyResult objects. The ensemble in ensemble.py is the only consumer
 of detector outputs — individual detectors are never called directly by
 the API, dashboard, or reporting layers.
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
+
+import pandas as pd
 
 
 @dataclass
@@ -76,7 +79,7 @@ class AnomalyDetector(ABC):
         return self.__class__.__name__.lower().replace("detector", "")
 
     @abstractmethod
-    def fit(self, historical: "pd.DataFrame") -> None:  # noqa: F821
+    def fit(self, historical: pd.DataFrame) -> None:
         """
         Calibrate the detector on historical KPI data.
 
@@ -87,7 +90,7 @@ class AnomalyDetector(ABC):
         ...
 
     @abstractmethod
-    def detect(self, current: "pd.DataFrame") -> list[AnomalyResult]:  # noqa: F821
+    def detect(self, current: pd.DataFrame) -> list[AnomalyResult]:
         """
         Apply the fitted model to the current observation window.
 

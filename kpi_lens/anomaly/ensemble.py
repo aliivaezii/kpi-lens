@@ -9,10 +9,12 @@ Weight configuration lives in config/anomaly.yaml so thresholds can be
 tuned without code changes. The ensemble applies weighted voting and
 emits a single AnomalyResult per KPI per time window.
 """
+
 from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 import yaml
@@ -27,9 +29,10 @@ logger = logging.getLogger(__name__)
 _CONFIG_PATH = Path(__file__).parent.parent.parent / "config" / "anomaly.yaml"
 
 
-def _load_config() -> dict:  # type: ignore[return]
+def _load_config() -> dict[str, Any]:
     with _CONFIG_PATH.open() as f:
-        return yaml.safe_load(f)["detection"]
+        result: dict[str, Any] = yaml.safe_load(f)["detection"]
+        return result
 
 
 class EnsembleDetector:
@@ -78,13 +81,17 @@ class EnsembleDetector:
             logger.warning(
                 "Only %d days of history for %s; minimum is %d. "
                 "Only ThresholdDetector will run.",
-                n_days, self._kpi_name, min_days,
+                n_days,
+                self._kpi_name,
+                min_days,
             )
         for detector in self._detectors:
             try:
                 detector.fit(historical)
             except Exception:
-                logger.exception("fit() failed for %s on %s", detector.name, self._kpi_name)
+                logger.exception(
+                    "fit() failed for %s on %s", detector.name, self._kpi_name
+                )
 
     def detect(self, current: pd.DataFrame) -> list[AnomalyResult]:
         """
@@ -125,7 +132,9 @@ class EnsembleDetector:
             weighted_severity += r.severity * w
             total_weight += w
 
-        fused_severity = min(1.0, weighted_severity / total_weight) if total_weight else 0.0
+        fused_severity = (
+            min(1.0, weighted_severity / total_weight) if total_weight else 0.0
+        )
 
         # Use the result with highest individual severity as the template
         primary = max(results, key=lambda r: r.severity)

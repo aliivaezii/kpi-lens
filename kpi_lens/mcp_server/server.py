@@ -20,11 +20,13 @@ Tool registration order matches the recommended context window loading order:
   6. get_supplier_breakdown      — root cause: which supplier?
   7. trigger_report              — act: generate an executive report
 """
+
 from __future__ import annotations
 
 import json
 import logging
-from datetime import date, datetime, timedelta
+from datetime import date
+from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
@@ -38,7 +40,8 @@ mcp = FastMCP(
     instructions=(
         "You are a supply chain intelligence analyst with access to live KPI data. "
         "Always call get_kpi_schema first to understand thresholds and benchmarks. "
-        "Then call get_kpi_snapshot to see the current state before investigating anomalies."
+        "Then call get_kpi_snapshot to see the current state "
+        "before investigating anomalies."
     ),
 )
 
@@ -47,6 +50,7 @@ _repo = KPIRepository()
 
 
 # ── Resources (loaded into Claude's context at session start) ─────────────────
+
 
 @mcp.resource("kpi-lens://schema/kpis")
 def get_kpi_schema() -> str:
@@ -74,8 +78,9 @@ def get_kpi_schema() -> str:
 
 # ── Tools ─────────────────────────────────────────────────────────────────────
 
+
 @mcp.tool()
-def get_kpi_snapshot(reference_date: str | None = None) -> dict:  # type: ignore[return]
+def get_kpi_snapshot(reference_date: str | None = None) -> dict[str, Any]:
     """
     Current value for all 8 KPIs as of reference_date (default: today).
     Returns health status (green/yellow/red), MoM delta, and benchmark distance.
@@ -96,7 +101,7 @@ def get_kpi_time_series(
     end_date: str,
     entity: str = "global",
     granularity: str = "weekly",
-) -> dict:  # type: ignore[return]
+) -> dict[str, Any]:
     """
     Historical values for a single KPI over a date range.
     Use to identify trends, seasonality, and the build-up before an anomaly.
@@ -135,7 +140,7 @@ def get_recent_anomalies(
     days_back: int = 30,
     severity_floor: float = 0.3,
     kpi_filter: list[str] | None = None,
-) -> list[dict]:  # type: ignore[return]
+) -> list[dict[str, Any]]:
     """
     Anomaly events from the last N days, sorted by severity descending.
     Start here to understand what needs investigation right now.
@@ -154,7 +159,7 @@ def get_recent_anomalies(
 
 
 @mcp.tool()
-def compare_to_benchmark(kpi_name: str, industry: str = "automotive") -> dict:  # type: ignore[return]
+def compare_to_benchmark(kpi_name: str, industry: str = "automotive") -> dict[str, Any]:
     """
     Compare the current KPI value to industry percentiles (P25/P50/P75/P90).
     Frames whether an anomaly is 'below industry median' vs 'historically unusual'.
@@ -186,7 +191,7 @@ def get_supplier_breakdown(
     period_start: str,
     period_end: str,
     top_n: int = 5,
-) -> list[dict]:  # type: ignore[return]
+) -> list[dict[str, Any]]:
     """
     Per-supplier values for supplier-facing KPIs over a period.
     Use to determine if an anomaly is systemic (all suppliers) or concentrated.
@@ -215,7 +220,7 @@ def trigger_report(
     anomaly_ids: list[int],
     recipient_emails: list[str],
     include_recommendations: bool = True,
-) -> dict:  # type: ignore[return]
+) -> dict[str, Any]:
     """
     Enqueue generation and email delivery of a focused anomaly report.
     The report is generated asynchronously — this call returns immediately

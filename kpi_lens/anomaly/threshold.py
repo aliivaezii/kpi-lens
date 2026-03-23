@@ -1,7 +1,8 @@
 """Hard rule-based threshold detector — always runs, regardless of history length."""
+
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pandas as pd
 
@@ -34,7 +35,7 @@ class ThresholdDetector(AnomalyDetector):
                 results.append(
                     AnomalyResult(
                         kpi_name=self._kpi_name,
-                        detected_at=datetime.now(tz=timezone.utc),
+                        detected_at=datetime.now(tz=UTC),
                         period_start=row["period_start"],
                         period_end=row["period_end"],
                         observed_value=value,

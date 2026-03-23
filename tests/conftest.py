@@ -7,7 +7,16 @@ Key fixture contracts:
   - mock_anthropic: patches the Anthropic client — no real API calls
   - sample_kpi_df: 60 rows of realistic weekly OTIF data for detector tests
 """
+
 from __future__ import annotations
+
+import os
+
+# Must be set before any kpi_lens module that reads Settings() is imported.
+# The unit tests never call the real Anthropic API — the mock_anthropic fixture
+# intercepts all calls. This value is a placeholder so pydantic-settings
+# does not raise a validation error when the module is first imported in CI.
+os.environ.setdefault("ANTHROPIC_API_KEY", "sk-test-key-for-ci-only")
 
 from datetime import date, timedelta
 from unittest.mock import MagicMock
@@ -39,7 +48,9 @@ def mock_anthropic(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
     """
     mock = MagicMock()
     mock.messages.create.return_value = MagicMock(
-        content=[MagicMock(text="Mock LLM narrative: OTIF declined due to supplier delays.")],
+        content=[
+            MagicMock(text="Mock LLM narrative: OTIF declined due to supplier delays.")
+        ],
         usage=MagicMock(input_tokens=150, output_tokens=80),
     )
     monkeypatch.setattr("kpi_lens.llm.client.anthropic.Anthropic", lambda **_: mock)
@@ -59,12 +70,14 @@ def sample_kpi_df() -> pd.DataFrame:
     rows = []
     for i in range(n):
         period_start = start + timedelta(weeks=i)
-        rows.append({
-            "period_start": period_start,
-            "period_end": period_start + timedelta(days=6),
-            "value": float(rng.normal(96.0, 1.5)),
-            "entity": "global",
-        })
+        rows.append(
+            {
+                "period_start": period_start,
+                "period_end": period_start + timedelta(days=6),
+                "value": float(rng.normal(96.0, 1.5)),
+                "entity": "global",
+            }
+        )
     return pd.DataFrame(rows)
 
 
@@ -72,6 +85,6 @@ def sample_kpi_df() -> pd.DataFrame:
 def sample_kpi_df_with_spike(sample_kpi_df: pd.DataFrame) -> pd.DataFrame:
     """Same as sample_kpi_df but with a clear spike in the last 2 rows."""
     df = sample_kpi_df.copy()
-    df.loc[df.index[-1], "value"] = 78.0   # Far below red threshold (85%)
+    df.loc[df.index[-1], "value"] = 78.0  # Far below red threshold (85%)
     df.loc[df.index[-2], "value"] = 81.0
     return df

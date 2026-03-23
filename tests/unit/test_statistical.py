@@ -1,7 +1,7 @@
 """Unit tests for statistical anomaly detectors."""
+
 from __future__ import annotations
 
-import pandas as pd
 import pytest
 
 from kpi_lens.anomaly.statistical import CUSUMDetector, IQRDetector, ZScoreDetector
@@ -55,9 +55,9 @@ def test_cusum_detects_drift_not_spike(sample_kpi_df):
 
 def test_detector_severity_bounded(sample_kpi_df_with_spike):
     """All detectors must return severity in [0, 1]."""
-    for DetectorClass in [ZScoreDetector, IQRDetector, CUSUMDetector]:
-        det = DetectorClass("otif")
+    for detector_class in [ZScoreDetector, IQRDetector, CUSUMDetector]:
+        det = detector_class("otif")
         det.fit(sample_kpi_df_with_spike.iloc[:-2])
         results = det.detect(sample_kpi_df_with_spike.iloc[-2:])
         for r in results:
-            assert 0.0 <= r.severity <= 1.0, f"{DetectorClass.__name__} out of bounds"
+            assert 0.0 <= r.severity <= 1.0, f"{detector_class.__name__} out of bounds"

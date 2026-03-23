@@ -1,10 +1,11 @@
 """FastAPI application factory."""
+
 from __future__ import annotations
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from kpi_lens.api.routes import anomalies, health, kpis
+from kpi_lens.api.routes import anomalies, health, kpis, llm, reports
 
 app = FastAPI(
     title="KPI-Lens API",
@@ -23,3 +24,5 @@ app.add_middleware(
 app.include_router(health.router, prefix="/api")
 app.include_router(kpis.router, prefix="/api/kpis")
 app.include_router(anomalies.router, prefix="/api/anomalies")
+app.include_router(llm.router, prefix="/api/llm")
+app.include_router(reports.router, prefix="/api/reports")

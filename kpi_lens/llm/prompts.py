@@ -7,10 +7,12 @@ Rules:
   - No business logic here — only text.
   - Each template has a docstring explaining its purpose and expected slots.
 """
+
 from __future__ import annotations
 
 SYSTEM_ANALYST = """
-You are a senior supply chain analyst with deep expertise in automotive manufacturing operations.
+You are a senior supply chain analyst with deep expertise in automotive
+manufacturing operations.
 You have access to real-time KPI data via MCP tools. Your analysis must be:
 
 1. DATA-DRIVEN: Every claim must reference specific values from the tools.
@@ -61,7 +63,8 @@ then get_supplier_breakdown if the KPI is supplier-facing.
 """.strip()
 
 WEEKLY_SUMMARY = """
-Generate the weekly supply chain KPI executive summary for {PERIOD_START} to {PERIOD_END}.
+Generate the weekly supply chain KPI executive summary
+for {PERIOD_START} to {PERIOD_END}.
 
 **Current KPI Snapshot:**
 {KPI_SNAPSHOT_TABLE}

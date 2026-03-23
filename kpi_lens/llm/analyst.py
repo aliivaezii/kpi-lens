@@ -9,6 +9,7 @@ The analyst uses two modes:
   1. enrich_anomaly(anomaly_id): called automatically after detection
   2. chat(message, history): interactive Q&A from the dashboard chat page
 """
+
 from __future__ import annotations
 
 import json
@@ -59,9 +60,10 @@ class SupplyChainAnalyst:
                 return
 
             # Build the trend context for the period surrounding the anomaly
+            period_start = date.fromisoformat(str(anomaly["period_start"]))
             trend_df = self._repo.get_kpi_series(
                 kpi_name=anomaly["kpi_name"],
-                start=date.fromisoformat(str(anomaly["period_start"])) - timedelta(weeks=8),
+                start=period_start - timedelta(weeks=8),
                 end=date.fromisoformat(str(anomaly["period_end"])),
             )
             trend_table = self._context.format_trend_table(trend_df)
@@ -117,6 +119,7 @@ class SupplyChainAnalyst:
     ) -> str:
         """Interactive Q&A for the dashboard chat page."""
         from datetime import date as _date
+
         system = CHAT_SYSTEM.format(
             TODAY=_date.today().isoformat(),
             ACTIVE_ANOMALY_COUNT=active_anomaly_count,

@@ -6,6 +6,7 @@ Claude responds through the API (not direct SDK calls from Streamlit) so:
   - Streamlit reruns don't interrupt in-flight API calls
   - The same chat endpoint can be used by other frontends
 """
+
 from __future__ import annotations
 
 import httpx
