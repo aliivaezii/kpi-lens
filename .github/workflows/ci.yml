@@ -60,7 +60,7 @@ jobs:
         run: pytest tests/integration/ -v --no-cov
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         if: matrix.python-version == '3.11'
         with:
           file: ./coverage.xml
