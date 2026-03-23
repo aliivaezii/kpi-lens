@@ -5,10 +5,10 @@ All migrations are derived from these models. No SQL is written anywhere else
 in the codebase. Column names use snake_case to match pandas DataFrame columns
 that flow in from the anomaly detection pipeline.
 """
+
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Optional
 
 from sqlalchemy import (
     Boolean,
@@ -23,11 +23,12 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
-class Base(DeclarativeBase):
+class Base(DeclarativeBase):  # type: ignore[misc]
     pass
 
 
@@ -76,8 +77,8 @@ class AnomalyEvent(Base):
         Index(
             "idx_anomaly_events_unack",
             "is_acknowledged",
-            postgresql_where="is_acknowledged = FALSE",
-            sqlite_where="is_acknowledged = 0",
+            postgresql_where=text("is_acknowledged = FALSE"),
+            sqlite_where=text("is_acknowledged = 0"),
         ),
     )
 
@@ -100,12 +101,12 @@ class AnomalyEvent(Base):
     is_acknowledged: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
     )
-    acknowledged_by: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
-    acknowledged_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    acknowledged_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     # Populated asynchronously after detection — NULL until Claude has processed it
-    llm_narrative: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    llm_actions: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON
-    llm_generated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    llm_narrative: Mapped[str | None] = mapped_column(Text, nullable=True)
+    llm_actions: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON
+    llm_generated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     kpi_record: Mapped[KPIRecord] = relationship(back_populates="anomaly_events")
 
@@ -118,13 +119,13 @@ class BenchmarkReference(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     kpi_name: Mapped[str] = mapped_column(String(64), nullable=False)
     industry: Mapped[str] = mapped_column(String(64), nullable=False)
-    percentile_25: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    percentile_50: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    percentile_75: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    percentile_90: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    source: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
+    percentile_25: Mapped[float | None] = mapped_column(Float, nullable=True)
+    percentile_50: Mapped[float | None] = mapped_column(Float, nullable=True)
+    percentile_75: Mapped[float | None] = mapped_column(Float, nullable=True)
+    percentile_90: Mapped[float | None] = mapped_column(Float, nullable=True)
+    source: Mapped[str | None] = mapped_column(String(256), nullable=True)
     valid_from: Mapped[date] = mapped_column(Date, nullable=False)
-    valid_to: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    valid_to: Mapped[date | None] = mapped_column(Date, nullable=True)
 
 
 class ReportLog(Base):
@@ -144,8 +145,8 @@ class ReportLog(Base):
     period_start: Mapped[date] = mapped_column(Date, nullable=False)
     period_end: Mapped[date] = mapped_column(Date, nullable=False)
     file_path: Mapped[str] = mapped_column(Text, nullable=False)
-    pdf_path: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    email_sent_to: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    pdf_path: Mapped[str | None] = mapped_column(Text, nullable=True)
+    email_sent_to: Mapped[str | None] = mapped_column(Text, nullable=True)
     anomaly_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     triggered_by: Mapped[str] = mapped_column(String(64), nullable=False)
 
@@ -159,9 +160,9 @@ class IngestionAudit(Base):
     ingested_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=func.now()
     )
-    source_file: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    source_file: Mapped[str | None] = mapped_column(Text, nullable=True)
     source_type: Mapped[str] = mapped_column(String(32), nullable=False)
     records_received: Mapped[int] = mapped_column(Integer, nullable=False)
     records_accepted: Mapped[int] = mapped_column(Integer, nullable=False)
     records_rejected: Mapped[int] = mapped_column(Integer, nullable=False)
-    validation_errors: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    validation_errors: Mapped[str | None] = mapped_column(Text, nullable=True)

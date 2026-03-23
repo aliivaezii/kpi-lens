@@ -11,6 +11,7 @@ Usage:
     for kpi in ALL_KPIS:
         print(kpi.display_name)
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass

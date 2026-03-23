@@ -3,6 +3,7 @@ Central settings object — the only place that reads from environment variables
 
 Every other module imports `settings` from here. No module calls os.environ directly.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -13,7 +14,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 PROJECT_ROOT = Path(__file__).parent.parent
 
 
-class Settings(BaseSettings):
+class Settings(BaseSettings):  # type: ignore[misc]
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",
         env_file_encoding="utf-8",
