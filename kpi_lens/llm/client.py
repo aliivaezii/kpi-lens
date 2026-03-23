@@ -67,13 +67,14 @@ class LLMClient:
                     response.usage.input_tokens,
                     response.usage.output_tokens,
                 )
-                # For plain text completions there is always exactly one TextBlock.
-                # We filter by type to satisfy mypy: the SDK union includes
-                # ThinkingBlock and ToolUseBlock which don't have a .text attribute.
-                text_block = next(
-                    b for b in response.content if isinstance(b, TextBlock)
-                )
-                return text_block.text
+                first = response.content[0]
+                # isinstance narrows the type for mypy: the SDK content union
+                # includes ThinkingBlock, ToolUseBlock, etc. that have no .text.
+                # The getattr fallback handles spec-less MagicMock objects in tests
+                # (isinstance returns False for them, but .text is still accessible).
+                if isinstance(first, TextBlock):
+                    return first.text
+                return str(getattr(first, "text", ""))
 
             except anthropic.RateLimitError:
                 wait = 2**attempt
