@@ -17,8 +17,11 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install dev dependencies
-        run: pip install ruff mypy types-PyYAML pandas-stubs
+      - name: Install package + dev deps
+        # Full install so mypy resolves sqlalchemy, pydantic-settings, and anthropic
+        # types correctly. Without this, all three resolve to Any and produce
+        # cascading [misc] / [no-any-return] false positives.
+        run: pip install -e ".[dev]"
 
       - name: Ruff lint
         run: ruff check kpi_lens/

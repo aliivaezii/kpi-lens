@@ -74,7 +74,7 @@ class LLMClient:
                 # (isinstance returns False for them, but .text is still accessible).
                 if isinstance(first, TextBlock):
                     return first.text
-                return str(getattr(first, "text", ""))
+                return cast(str, getattr(first, "text", ""))
 
             except anthropic.RateLimitError:
                 wait = 2**attempt

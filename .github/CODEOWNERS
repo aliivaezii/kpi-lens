@@ -1,0 +1,17 @@
+# Code owners are automatically requested for review on PRs that touch their files.
+# Format: <pattern> <owner>
+
+# Default owner for everything
+* @aliivaezii
+
+# Core domain — requires careful review
+kpi_lens/db/         @aliivaezii
+kpi_lens/kpis/       @aliivaezii
+kpi_lens/anomaly/    @aliivaezii
+
+# API contract — breaking changes need explicit sign-off
+kpi_lens/api/        @aliivaezii
+kpi_lens/mcp_server/ @aliivaezii
+
+# CI / infra
+.github/             @aliivaezii

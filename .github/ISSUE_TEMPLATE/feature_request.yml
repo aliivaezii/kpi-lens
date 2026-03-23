@@ -1,0 +1,55 @@
+name: Feature Request
+description: Suggest a new KPI, detector, API endpoint, or dashboard view
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Feature requests are welcome. Please describe the problem you're solving, not just the solution.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      placeholder: "Currently there is no way to track..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      placeholder: "Add a new KPI called X that measures..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - New KPI definition
+        - Anomaly detector
+        - API endpoint
+        - Dashboard page / widget
+        - MCP tool
+        - Reporting template
+        - Ingestion source
+        - Developer tooling
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      placeholder: "I also considered... but rejected it because..."
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Are you willing to contribute this feature?
+      options:
+        - label: "Yes, I'd like to open a PR"
+        - label: "No, I'd just like to request it"
