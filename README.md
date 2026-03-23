@@ -1,156 +1,165 @@
-# 📊 KPI-Lens
-
-**LLM-powered supply chain KPI anomaly detection and auto-reporting**
+# KPI-Lens
 
 [![CI](https://github.com/aliivaezii/kpi-lens/actions/workflows/ci.yml/badge.svg)](https://github.com/aliivaezii/kpi-lens/actions/workflows/ci.yml)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
+[![Python](https://img.shields.io/badge/python-3.11%2B-blue)]()
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)]()
 
-KPI-Lens monitors 8 operational supply chain KPIs in real time, detects statistical and ML-based anomalies, and uses **Claude (claude-sonnet-4-6) via MCP** to generate natural-language root cause analyses and executive PowerPoint reports — automatically.
+> An AI-powered supply chain intelligence platform that monitors 8 operational KPIs,
+> detects anomalies using an ensemble of statistical detectors, and explains root causes
+> via Claude — all accessible through a Streamlit dashboard, FastAPI, and an MCP server.
 
----
+## Features
+
+- **8 supply chain KPIs** tracked weekly: OTIF, Fill Rate, DFA, Inventory Turnover, DIO, Supplier DPPM, Lead Time Variance, PO Cycle Time
+- **Ensemble anomaly detection**: Z-score + IQR + CUSUM + Isolation Forest detectors with weighted voting
+- **LLM root-cause analysis**: Claude generates narrative explanations and recommended actions for each anomaly
+- **FastAPI backend** with 10+ endpoints for KPI data, anomaly management, and LLM chat
+- **Streamlit dashboard** with 5 pages: Command Center, KPI Deep Dive, Anomaly Log, LLM Analyst, Reports
+- **MCP server** for Claude Desktop integration — query live KPI data conversationally
+- **Automated ingestion**: CSV/Excel file watcher with Pydantic v2 validation and APScheduler cron
+- **Report generation**: Excel workbooks and PowerPoint decks for SteerCo presentations
+- **80%+ test coverage** across unit and integration tests; CI runs on Python 3.11 + 3.12
+
+## Quick Start
+
+### Docker Compose (recommended)
+
+```bash
+git clone https://github.com/aliivaezii/kpi-lens.git
+cd kpi-lens
+cp .env.example .env          # Add your ANTHROPIC_API_KEY
+docker compose up -d api dashboard
+
+# Seed 2 years of synthetic KPI data (first run only)
+docker compose run --rm api python scripts/seed_database.py
+
+# Open the dashboard
+open http://localhost:8501
+```
+
+### Local Development
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+cp .env.example .env          # Add your ANTHROPIC_API_KEY
+
+# Seed the database
+python data/seeds/generate_kpis.py
+
+# Start services (three terminals)
+uvicorn kpi_lens.api.main:app --reload --port 8000
+streamlit run kpi_lens/dashboard/app.py
+python -m kpi_lens.mcp_server.server   # optional: MCP for Claude Desktop
+```
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         KPI-Lens                                │
-│                                                                 │
-│  ┌──────────────┐     ┌──────────────────────────────────────┐ │
-│  │  Streamlit   │────►│         Claude Agent                 │ │
-│  │  Dashboard   │     │    (claude-sonnet-4-6 via API)       │ │
-│  │  Port 8501   │     └──────────────┬───────────────────────┘ │
-│  └──────────────┘                    │ MCP Tool Calls           │
-│                                      ▼                          │
-│  ┌──────────────┐     ┌─────────────────────────────────────┐  │
-│  │  FastAPI     │◄───►│         MCP Server                  │  │
-│  │  Port 8000   │     │  (read-only KPI & anomaly access)   │  │
-│  └──────┬───────┘     └─────────────────────────────────────┘  │
-│         │                                                       │
-│         ▼                                                       │
-│  ┌──────────────┐     ┌─────────────────────────────────────┐  │
-│  │   SQLite DB  │     │   Anomaly Detection Pipeline        │  │
-│  │   kpi_lens   │     │  ThresholdDetector → Z-Score → IQR  │  │
-│  │   .db        │     │  → CUSUM → IsolationForest          │  │
-│  └──────────────┘     │  → EnsembleDetector (weighted vote) │  │
-│                        └─────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│  External Sources (CSV/Excel exports from ERP)              │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ ingestion/loader.py + validator.py
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│  SQLite DB  ←──  db/repository.py (only DB gateway)        │
+└──────┬────────────────────────────────────────────────────┬─┘
+       │                                                    │
+       ▼                                                    ▼
+┌─────────────────────┐                     ┌──────────────────────────┐
+│  anomaly/ensemble   │   AnomalyResult     │  api/  (FastAPI)         │
+│  ┣ threshold        │ ────────────────►   │  dashboard/ (Streamlit)  │
+│  ┣ zscore/iqr/cusum │                     │  mcp_server/ (FastMCP)   │
+│  ┗ isolation forest │                     └──────────────────────────┘
+└─────────┬───────────┘
+          │ async (non-blocking)
+          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  llm/analyst.py  →  Claude via Anthropic SDK               │
+│  Generates narrative + recommended actions per anomaly      │
+└─────────────────────────────────────────────────────────────┘
+          │
+          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  reporting/  →  Excel workbook  +  PowerPoint deck          │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-## KPIs Monitored
+## KPI Reference
 
-| KPI | Unit | Target | Industry Benchmark |
-|---|---|---|---|
-| OTIF Delivery Rate | % | ≥ 95% | 95.5% |
-| Order Fill Rate | % | ≥ 97% | 96.0% |
-| Demand Forecast Accuracy | % | ≥ 85% | 80.0% |
-| Inventory Turnover | turns/yr | ≥ 12 | 10.0 |
-| Days Inventory Outstanding | days | ≤ 30 | 35.0 |
-| Supplier DPPM | ppm | ≤ 500 | 800 |
-| Lead Time Variance | days σ | ≤ 3 | 5.0 |
-| PO Cycle Time | days | ≤ 14 | 18.0 |
+| KPI | Unit | Direction | Green threshold | Industry Benchmark |
+|---|---|---|---|---|
+| OTIF Delivery Rate | % | Higher is better | 95% | 95.5% |
+| Order Fill Rate | % | Higher is better | 97% | 96% |
+| Demand Forecast Accuracy | % | Higher is better | 85% | 80% |
+| Inventory Turnover | turns/yr | Higher is better | 12 | 10 |
+| Days Inventory Outstanding | days | Lower is better | 30 | 35 |
+| Supplier DPPM | ppm | Lower is better | 500 | 800 |
+| Lead Time Variance | days | Lower is better | 3 | 5 |
+| PO Cycle Time | days | Lower is better | 14 | 18 |
 
-## Key Features
+## API Reference
 
-- **Multi-method anomaly detection**: Z-score (spikes) + IQR (distribution shifts) + CUSUM (drift) + Isolation Forest (multivariate ML)
-- **LLM root cause analysis**: Claude investigates anomalies via MCP tools and generates narrative + 3 actionable recommendations
-- **Interactive dashboard**: Streamlit + Plotly with RAG health grid, trend charts, anomaly log, and live chat interface
-- **Automated reports**: PowerPoint + PDF with KPI charts, anomaly deep-dives, and executive summaries
-- **Power BI export**: Structured Excel workbooks with named tables for direct Power BI consumption
-- **MCP server**: Gives Claude structured, read-only access to KPI data via 6 typed tools
-- **Fully containerised**: Docker Compose for one-command deployment
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/health` | Health check |
+| GET | `/api/kpis/snapshot` | Latest value + health status for all 8 KPIs |
+| GET | `/api/kpis/{name}/series` | Time-series data for one KPI |
+| GET | `/api/kpis/{name}/entities` | Entity (supplier) breakdown |
+| GET | `/api/kpis/{name}/benchmarks` | Industry benchmark percentiles |
+| GET | `/api/anomalies` | Recent anomalies with severity filter |
+| POST | `/api/anomalies/{id}/acknowledge` | Acknowledge an anomaly |
+| POST | `/api/llm/chat` | Chat with the supply chain analyst |
+| POST | `/api/reports/enqueue` | Enqueue an anomaly report |
 
-## Quick Start
-
-```bash
-# 1. Clone and install
-git clone https://github.com/aliivaezii/kpi-lens.git
-cd kpi-lens
-pip install -e ".[dev]"
-
-# 2. Configure
-cp .env.example .env
-# Edit .env and add your ANTHROPIC_API_KEY
-
-# 3. Seed database with 2 years of synthetic data
-python data/seeds/generate_kpis.py
-
-# 4a. Run with Docker (recommended)
-docker compose up
-
-# 4b. Or run services individually
-uvicorn kpi_lens.api.main:app --reload &
-streamlit run kpi_lens/dashboard/app.py
-```
-
-Open http://localhost:8501 for the dashboard.
-
-## Running with MCP (Claude Desktop)
-
-Add to your `claude_desktop_config.json`:
-```json
-{
-  "mcpServers": {
-    "kpi-lens": {
-      "command": "python",
-      "args": ["-m", "kpi_lens.mcp_server.server"],
-      "cwd": "/path/to/kpi-lens",
-      "env": {"ANTHROPIC_API_KEY": "sk-ant-..."}
-    }
-  }
-}
-```
-
-Claude Desktop will then have live access to your supply chain KPIs.
-
-## Development
-
-```bash
-# Run tests
-pytest tests/unit/ -v
-
-# Lint + format
-ruff check kpi_lens/ && ruff format kpi_lens/
-
-# Type check
-mypy kpi_lens/
-
-# Run anomaly scan
-python scripts/run_anomaly_scan.py
-```
-
-## Tech Stack
-
-| Layer | Technology |
-|---|---|
-| LLM | Claude claude-sonnet-4-6 (Anthropic API) |
-| MCP | `mcp` (FastMCP) — Model Context Protocol |
-| Anomaly Detection | Z-score, IQR, CUSUM, Isolation Forest (sklearn) |
-| Dashboard | Streamlit + Plotly |
-| API | FastAPI + Uvicorn |
-| Database | SQLite via SQLAlchemy 2.0 |
-| Reporting | python-pptx + LibreOffice (PDF) + openpyxl (Power BI) |
-| Scheduling | APScheduler |
-| CI/CD | GitHub Actions |
-| Containerization | Docker + Docker Compose |
+Interactive docs: `http://localhost:8000/api/docs`
 
 ## Project Structure
 
 ```
 kpi_lens/
-├── config.py           # Pydantic settings (single .env reader)
-├── db/                 # SQLAlchemy models + repository pattern
-├── kpis/               # KPI definitions — 8 typed constants
-├── anomaly/            # Detection pipeline: base ABC → detectors → ensemble
-├── llm/                # Anthropic client, prompts, analyst orchestrator
-├── mcp_server/         # FastMCP server with 6 typed tools
-├── reporting/          # PPTX, PDF, Excel/Power BI export
-├── dashboard/          # Streamlit app (5 pages)
-└── api/                # FastAPI endpoints
+├── db/           # repository.py — the only DB gateway; schema.py — ORM models
+├── kpis/         # definitions.py — 8 KPI constants; snapshot.py — enrichment
+├── anomaly/      # base.py, threshold, statistical, ml, ensemble detectors
+├── llm/          # client.py (retry), analyst.py, context_builder.py, prompts.py
+├── ingestion/    # loader.py, validator.py (Pydantic v2), scheduler.py (APScheduler)
+├── reporting/    # excel_exporter.py, powerpoint.py, pdf_converter.py
+├── api/          # FastAPI app + routes (kpis, anomalies, llm, reports, health)
+├── dashboard/    # Streamlit app + 5 pages
+└── mcp_server/   # FastMCP tools for Claude Desktop
+config/           # kpis.yaml, anomaly.yaml, report.yaml (change without redeploy)
+scripts/          # seed_database.py, run_anomaly_scan.py
+tests/
+├── unit/         # 8 test files, 70+ tests, no I/O
+└── integration/  # FastAPI test client, in-memory DB, mocked LLM
 ```
 
----
+## Running Tests
 
-*Built by [Ali Vaezi](https://alivaezi.vercel.app) · MSc Digital Skills, Politecnico di Torino*
-*Part of a supply chain AI research portfolio — see also [SUPRA-PPO](https://github.com/aliivaezii/FBWM-FTOPSIS-PPO)*
+```bash
+# Unit tests (fast, no infrastructure needed)
+pytest tests/unit/ -v --cov=kpi_lens --cov-fail-under=80
+
+# Integration tests (FastAPI + in-memory DB)
+pytest tests/integration/ -v
+
+# All tests
+pytest tests/ -v --cov=kpi_lens --cov-fail-under=80
+```
+
+## Seeding Data
+
+```bash
+# Default: 104 weeks (2 years) of synthetic data for all 8 KPIs
+python scripts/seed_database.py
+
+# Custom parameters
+python scripts/seed_database.py --weeks 52
+
+# Run anomaly detection on seeded data
+python scripts/run_anomaly_scan.py
+```
+
+## License
+
+MIT — see [LICENSE](LICENSE).
