@@ -14,7 +14,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 PROJECT_ROOT = Path(__file__).parent.parent
 
 
-class Settings(BaseSettings):  # type: ignore[misc]
+class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",
         env_file_encoding="utf-8",
@@ -57,5 +57,7 @@ class Settings(BaseSettings):  # type: ignore[misc]
         return self.kpi_lens_env == "production"
 
 
-# Module-level singleton — import this everywhere
-settings = Settings()
+# Module-level singleton — import this everywhere.
+# pydantic-settings populates required fields from the environment at runtime;
+# mypy can't see that, so we suppress the false-positive [call-arg] here.
+settings = Settings()  # type: ignore[call-arg]

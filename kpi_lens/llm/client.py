@@ -9,9 +9,10 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any
+from typing import Any, cast
 
 import anthropic
+from anthropic.types import MessageParam, TextBlock
 
 from kpi_lens.config import settings
 
@@ -57,14 +58,22 @@ class LLMClient:
                     model=self._model,
                     max_tokens=max_tokens,
                     system=system,
-                    messages=messages,
+                    # cast is safe: our callers always pass role/content dicts.
+                    # The SDK's MessageParam TypedDict is structurally identical.
+                    messages=cast(list[MessageParam], messages),
                 )
                 logger.debug(
                     "LLM call succeeded | tokens: %d in / %d out",
                     response.usage.input_tokens,
                     response.usage.output_tokens,
                 )
-                return str(response.content[0].text)
+                # For plain text completions there is always exactly one TextBlock.
+                # We filter by type to satisfy mypy: the SDK union includes
+                # ThinkingBlock and ToolUseBlock which don't have a .text attribute.
+                text_block = next(
+                    b for b in response.content if isinstance(b, TextBlock)
+                )
+                return text_block.text
 
             except anthropic.RateLimitError:
                 wait = 2**attempt

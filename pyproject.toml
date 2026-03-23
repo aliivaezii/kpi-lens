@@ -99,14 +99,15 @@ strict = true
 ignore_missing_imports = true
 exclude = ["tests/", "scripts/", "data/"]
 
-# Third-party frameworks (Streamlit, FastAPI router decorators, FastMCP) do not
-# ship complete mypy stubs. We suppress all errors for those boundary layers
+# Third-party frameworks (Streamlit, FastAPI router decorators, FastMCP, python-pptx)
+# do not ship complete mypy stubs. We suppress all errors for those boundary layers
 # rather than papering them with per-line type: ignore comments.
 [[tool.mypy.overrides]]
 module = [
     "kpi_lens.dashboard.*",
     "kpi_lens.mcp_server.*",
     "kpi_lens.api.routes.*",
+    "kpi_lens.reporting.*",
 ]
 ignore_errors = true
 
