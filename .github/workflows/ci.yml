@@ -11,9 +11,9 @@ jobs:
     name: Lint & Type Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@v6.0.2
 
-      - uses: actions/setup-python@v5.4.0
+      - uses: actions/setup-python@v6.2.0
         with:
           python-version: "3.11"
 
@@ -41,9 +41,9 @@ jobs:
         python-version: ["3.11", "3.12"]
 
     steps:
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@v6.0.2
 
-      - uses: actions/setup-python@v5.4.0
+      - uses: actions/setup-python@v6.2.0
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -60,7 +60,7 @@ jobs:
         run: pytest tests/integration/ -v --no-cov
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         if: matrix.python-version == '3.11'
         with:
           file: ./coverage.xml
@@ -71,7 +71,7 @@ jobs:
     needs: lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@v6.0.2
 
       - name: Build API image
         run: docker build -f Dockerfile.api --target production -t kpi-lens-api:test .

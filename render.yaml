@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: kpi-lens-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile.api
+    dockerContext: .
+    plan: free
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false          # set manually in Render dashboard
+      - key: DATABASE_URL
+        value: sqlite:////data/kpi_lens.db
+      - key: KPI_LENS_ENV
+        value: production
+    disk:
+      name: kpi-data
+      mountPath: /data
+      sizeGB: 1
+    buildCommand: ""
+    startCommand: >
+      sh -c "python scripts/seed_database.py --db sqlite:////data/kpi_lens.db &&
+             uvicorn kpi_lens.api.main:app --host 0.0.0.0 --port 10000"
+    healthCheckPath: /api/health
+
+  - type: web
+    name: kpi-lens-dashboard
+    runtime: docker
+    dockerfilePath: ./Dockerfile.dashboard
+    dockerContext: .
+    plan: free
+    envVars:
+      - key: API_BASE_URL
+        fromService:
+          name: kpi-lens-api
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
