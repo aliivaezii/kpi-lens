@@ -50,8 +50,12 @@ def scan_kpi(kpi_name: str, repo: KPIRepository, weeks_back: int) -> int:
         logger.warning("Skipping %s — insufficient data (%d rows)", kpi_name, len(df))
         return 0
 
-    historical = df[df["period_end"] <= pd.Timestamp(history_cutoff)]
-    current = df[df["period_end"] > pd.Timestamp(history_cutoff)]
+    # Convert to datetime for comparison — repository returns date objects which
+    # pandas stores as object dtype, incompatible with pd.Timestamp comparisons.
+    dates = pd.to_datetime(df["period_end"])
+    cutoff_ts = pd.Timestamp(history_cutoff)
+    historical = df[dates <= cutoff_ts]
+    current = df[dates > cutoff_ts]
 
     if current.empty:
         logger.warning("Skipping %s — no current-period data", kpi_name)
